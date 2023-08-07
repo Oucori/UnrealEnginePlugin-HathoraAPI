@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include "Http.h"
+#include "SHathoraLobbyInfo.h"
+#include "SRoomConnectionInfo.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "HathoraAPIBPLibrary.generated.h"
 
@@ -22,11 +25,59 @@
 *	For more info on custom blueprint nodes visit documentation:
 *	https://wiki.unrealengine.com/Custom_Blueprint_Node_Creation
 */
+
+// Delegate with three parameters with dummy response array
+
+DECLARE_DYNAMIC_DELEGATE_ThreeParams(FHathoraLobbyListCallback, const TArray<FSHathoraLobbyInfo>&, HathoraLobbyInfos, int32, HttpStatus, bool, Success);
+DECLARE_DYNAMIC_DELEGATE_ThreeParams(FHathoraLobbyCreateCallback, const FSHathoraLobbyInfo, HathoraLobbyInfos, int32, HttpStatus, bool, Success);
+
+DECLARE_DYNAMIC_DELEGATE_ThreeParams(FHathoraAuthCallback, const FString, Token, int32, HttpStatus, bool, Success);
+DECLARE_DYNAMIC_DELEGATE_ThreeParams(FHathoraRoomInfoCallback, const FSRoomConnectionInfo, RoomConnectionInfo, int32, HttpStatus, bool, Success);
+
 UCLASS()
 class UHathoraAPIBPLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_UCLASS_BODY()
+	
+public:
+	/**
+	 * Lobbies
+	 */
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "List Active Public Lobbies", Keywords = "Lists all Lobbies that are currently Active."), Category = "HathoraAPI|Lobbies")
+	static void HathoraAPIListActivePublicLobbies(FHathoraLobbyListCallback Callback);
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Execute Sample function", Keywords = "HathoraAPI sample test testing"), Category = "HathoraAPITesting")
-	static float HathoraAPISampleFunction(float Param);
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Create Lobby", Keywords = "Creates a Lobby."), Category = "HathoraAPI|Lobbies")
+	static void HathoraAPICreateLobby(FHathoraLobbyCreateCallback Callback, FString token);
+
+	/**
+	 * Configuration
+	 */
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get App Id", Keywords = "HathoraAPI Project App Id."), Category = "HathoraAPI|Configuration")
+	static FString HathoraAPIGetAppId();
+
+	/**
+	 * Rooms
+	 */
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get Room Connection Info", Keywords = "Returns Room Connection Info."), Category = "HathoraAPI|Rooms")
+	static void HathoraAPIGetRoomConnectionInfo(FHathoraRoomInfoCallback Callback, FString RoomId);
+
+	/**
+	 * Authentication
+	 */
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Login with Nickname", Keywords = "Login with Nickname."), Category = "HathoraAPI|Authentication")
+	static void HathoraAPILoginWithNickname(FHathoraAuthCallback Callback, FString Nickname);
+	
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Login Anonymous", Keywords = "Login Anonymous."), Category = "HathoraAPI|Authentication")
+	static void HathoraAPILoginAnonymous(FHathoraAuthCallback Callback);
+
+private:
+	static const FString API_URL;
+
+	static void OnLobbyListInfoCallBackResponse(FHathoraLobbyListCallback Callback, FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+	
+	static void OnLobbyCreatedResponse(FHathoraLobbyCreateCallback Callback, FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+
+	static void OnLoginResponse(FHathoraAuthCallback, FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+
+	static void OnRoomInfoResponse(FHathoraRoomInfoCallback, FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 };
